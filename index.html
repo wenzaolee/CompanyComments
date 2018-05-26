@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>公司点评</title>
+<link href="lib/bootstrap-4.0.0-dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<link rel="stylesheet" href="lib/jquery-ui-1.12.1.custom/jquery-ui.css">
+<script src=lib/jquery-3.3.1.min.js></script>
+<script src="lib/jquery-ui-1.12.1.custom/jquery-ui.js"></script>
+<script src=lib/bootstrap-4.0.0-dist/js/bootstrap.min.js></script>
+<script src=lib/nebulas.js></script>
+<script src=lib/nebPay.js></script>
+<script>
+
+"use strict";
+
+var dappAddress = "n1fyfzd7BrNCyjVhnN77MLMopUi928PSnBW"; //主网, hash: d2bfd426b3a402940b5d8788fde43b99adba3d5a6377b7285ef7ceab5a6c4a4b
+var nebulas = require("nebulas"),
+Account = nebulas.Account,
+neb = new nebulas.Neb();
+neb.setRequest(new nebulas.HttpRequest("https://mainnet.nebulas.io"));
+
+var NebPay = require("nebpay");    
+var nebPay = new NebPay();
+
+var pageSize = 10;
+var totalCount = 0;
+var totalPage = 0;
+var pageIndex = 1;
+
+var pageSize4Comment = 10;
+var totalCount4Comment = 0;
+var totalPage4Comment = 0;
+var pageIndex4Comment = 1;
+var myProvince = "";
+
+$(document).ready(function(){ 
+    $("#loading").hide();
+	pageIndex = 1;
+	showMainpage();
+}); 
+
+function showMainpage(){
+	$("#main").show();
+	$("#addCompany").hide();
+	$("#viewCompany").hide();
+	$("#modifyCompany").hide();
+	showTable(pageIndex);
+}
+
+function changeProvince(){
+	var newProvince= $.trim($("#myProvince").val());
+	if(newProvince!=myProvince){
+		myProvince = newProvince;
+		pageSize = 10;
+		totalCount = 0;
+		totalPage = 0;
+		pageIndex = 1;
+		pageSize4Comment = 10;
+		totalCount4Comment = 0;
+		totalPage4Comment = 0;
+		pageIndex4Comment = 1;
+		$("#loading").hide();
+		showMainpage();
+ 	}
+}
+	
+
+function showTable(toPageIndex){
+	 var from = Account.NewAccount().getAddressString();
+     var value = "0";
+     var nonce = "0"
+     var gas_price = "1000000"
+     var gas_limit = "2000000"
+     var callFunction = "getCompanyListForGlobal";
+     var callArgs = "[" +((toPageIndex-1)*pageSize + 1)+","+pageSize+ "]"; 
+     
+     if(myProvince!=""){
+    	  callFunction = "getCompanyList";
+          callArgs = "[\"" + myProvince + "\"," +((toPageIndex-1)*pageSize + 1)+","+pageSize+ "]"; 
+     }
+     
+     var contract = {
+         "function": callFunction,
+         "args": callArgs
+     }
+     $("#loading").show();
+     neb.api.call(from,dappAddress,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+    	 $("#loading").hide();
+    	 var result = resp.result     
+         console.log("return of getCommpanyList: " + JSON.stringify(result))
+         if (result != 'null'){
+        	 var arrayResult = JSON.parse(JSON.parse(result));
+        	 pageIndex = toPageIndex;
+        	 var str="";
+        	 for(var i= 0;i< arrayResult.length ;i++){
+        		 var item= arrayResult[i];
+        		 totalCount = item.totalCompanyCount;
+        		 str += "<tr>";
+        		 str += "<td> <a href=\"javascript:viewCompany('" + item.name + "')\" >" + item.name + "</a></td>";
+        		 str += "<td>" + item.province + "</td>";
+        		 str += "<td>" + item.totalCommentCount + "</td>";
+        		 str += "<td>" + Math.round(10*item.avgScore)/10 + "</td>";
+        		 str += "</tr>"
+        	 }
+        	 totalPage = Math.ceil(totalCount/pageSize);
+        	 $("#tbody").html(str); 
+        	 $("#totalCount").text(""+totalCount);
+        	 $("#totalPage").text(""+totalPage);
+        	 $("#pageIndex").text(""+pageIndex);
+         }
+     }).catch(function (err) {
+         console.log("error:" + err.message)
+         alert("发生异常:" + err.message);
+     })
+}
+
+function searchCompany(){
+	var name=$.trim($("#searchName").val());
+	if(name == ""){
+		showTable(1) ;
+		return;
+	}
+	var from = Account.NewAccount().getAddressString();
+    var value = "0";
+    var nonce = "0"
+    var gas_price = "1000000"
+    var gas_limit = "2000000"
+    var callFunction = "getCompany";
+    var callArgs = "[\"" +name+ "\"]"; 
+    var contract = {
+        "function": callFunction,
+        "args": callArgs
+    }
+    $("#loading").show();
+    neb.api.call(from,dappAddress,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+        $("#loading").hide();
+     	 var result = resp.result     
+          console.log("return of getCompany: " + JSON.stringify(result))
+          if (result=='null'){
+        	  $("#tbody").html(""); 
+        	  alert("未找到记录!");
+        	  totalCount = 0;
+        	  pageIndex = 0;
+        	  totalPage = 0;
+          }
+          else{
+       	    result = JSON.parse(JSON.parse(result)); 
+            var str = "<tr>";
+           	str += "<td> <a href=\"javascript:viewCompany('" + result.name + "')\" >" + result.name + "</a></td>";
+           	str += "<td>" + result.province + "</td>";
+           	str += "<td>" + result.totalCommentCount + "</td>";
+           	str += "<td>" +  Math.round(10*result.avgScore)/10 + "</td>";
+            str += "</tr>"
+           	  
+           	  totalCount = 1;
+           	  pageIndex = 1;
+           	  totalPage = 1;
+           	 $("#tbody").html(str); 
+           	
+          }
+     	 $("#totalCount").text(""+totalCount);
+       	 $("#totalPage").text(""+totalPage);
+       	 $("#pageIndex").text(""+pageIndex);
+      });
+}
+
+
+function showTable4Comment(toPageIndex){
+	var name=$.trim($("#viewName").text());
+	var from = Account.NewAccount().getAddressString();
+    var value = "0";
+    var nonce = "0"
+    var gas_price = "1000000"
+    var gas_limit = "2000000"
+    var callFunction = "getCommentList";
+    var callArgs = "[\"" + name + "\"," +((toPageIndex-1)*pageSize4Comment + 1)+","+pageSize4Comment+ "]"; 
+    var contract = {
+        "function": callFunction,
+        "args": callArgs
+    }
+    $("#loading").show();
+    neb.api.call(from,dappAddress,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+   	 $("#loading").hide();
+   	 var result = resp.result     
+        console.log("return of getCommentList: " + JSON.stringify(result))
+        if (result != 'null'){
+       	 var arrayResult = JSON.parse(JSON.parse(result));
+       	 pageIndex4Comment = toPageIndex;
+       	 var str="";
+       	 for(var i= 0;i< arrayResult.length ;i++){
+       		 var item= arrayResult[i];
+       		 str += "<tr>";
+       		 str += "<td>作者: " + item.createdBy  ;
+       		 str += "&nbsp;&nbsp;&nbsp;&nbsp;日期:" + item.createdDate  ;
+       		 if(item.score>0){
+       		    str += "&nbsp;&nbsp;&nbsp;&nbsp;评分:" + item.score   ;
+       		 }
+       		 str += "<br/>" + item.remark + "</td>";
+       		 str += "</tr>"
+       	 }
+       	 $("#commentList").html(str);  
+       	 $("#pageIndex4Comment").text(""+pageIndex4Comment);
+        }
+    }).catch(function (err) {
+        console.log("error:" + err.message)
+        alert("发生异常:" + err.message);
+    })
+}
+
+
+
+function viewCompany(name){
+	var from = Account.NewAccount().getAddressString();
+    var value = "0";
+    var nonce = "0"
+    var gas_price = "1000000"
+    var gas_limit = "2000000"
+    var callFunction = "getCompany";
+    var callArgs = "[\"" +name+ "\"]"; 
+    var contract = {
+        "function": callFunction,
+        "args": callArgs
+    }
+    $("#loading").show();
+    neb.api.call(from,dappAddress,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+         $("#loading").hide();
+      	 var result = resp.result     
+           console.log("return of getCompany: " + JSON.stringify(result))
+           if (result=='null'){
+        	   showMainpage();
+           }
+           else{
+        	   result = JSON.parse(JSON.parse(result));
+        	    $("#main").hide();
+        		$("#addCompany").hide();
+        		$("#viewCompany").show();
+        		$("#modifyCompany").hide(); 
+        		$("#viewName").text(result.name);
+        		$("#viewProvince").text(result.province);
+        		$("#viewAddress").text(result.address);
+        		$("#viewProperty").text(result.property);
+        		$("#viewIndustry").text(result.industry);
+        		$("#viewScale").text(result.scale);
+        		$("#viewWebSite").text(result.webSite);
+        		$("#viewIntroduction").text(result.introduction);
+        		$("#viewCommentCount").text(result.totalCommentCount);
+        		$("#viewAvgScore").text( Math.round(10*result.avgScore)/10);
+        		$("#newRemark").val("");
+        		$("#newScore").val("0");
+        		
+          		totalCount4Comment = result.totalCommentCount;
+                totalPage4Comment = Math.ceil(totalCount4Comment/pageSize4Comment);
+          		$("#totalCount4Comment").text(""+totalCount4Comment);
+              	$("#totalPage4Comment").text(""+totalPage4Comment);
+        		showTable4Comment(1)
+           }
+       });
+}
+
+function toModifyCompany(name){
+	var from = Account.NewAccount().getAddressString();
+    var value = "0";
+    var nonce = "0"
+    var gas_price = "1000000"
+    var gas_limit = "2000000"
+    var callFunction = "getCompany";
+    var callArgs = "[\"" +name+ "\"]"; 
+    var contract = {
+        "function": callFunction,
+        "args": callArgs
+    }
+    neb.api.call(from,dappAddress,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+      	  var result = resp.result     
+           console.log("return of getCompany: " + JSON.stringify(result))
+           if (result=='null'){
+           	  alert("公司不存在!")
+           }
+           else{
+        	   result = JSON.parse(JSON.parse(result));
+        		$("#main").hide();
+        		$("#addCompany").hide();
+        		$("#viewCompany").hide();
+        		$("#modifyCompany").show();
+        		$("#modifyName").text(result.name);
+        		$("#modifyProvince").val(result.province);
+        		$("#modifyAddress").val(result.address);
+        		$("#modifyProperty").val(result.property);
+        		$("#modifyIndustry").val(result.industry);
+        		$("#modifyScale").val(result.scale);
+        		$("#modifyWebSite").val(result.webSite);
+        		$("#modifyIntroduction").val(result.introduction);
+           }
+       });
+}
+
+function toAddNewCompany(){	
+	$("#main").hide();
+	$("#addCompany").show();
+	$("#viewCompany").hide();
+	$("#modifyCompany").hide();
+	$("#newName").val("");
+	$("#newAddress").val("");
+	$("#newWebSite").val("");
+	$("#newIntroduction").val("");
+}
+
+function toRefreshCompany4View(){
+	var name=$.trim($("#viewName").text());
+	viewCompany( name);
+}
+
+function toVoteCompany4View(){
+	var name=$.trim($("#viewName").text());
+	voteCompany( name);
+}
+
+function toModifyCompany4View(){
+	var name=$.trim($("#viewName").text());
+	toModifyCompany( name);
+}
+
+function toViewCompany4Modify(){
+	var name=$.trim($("#modifyName").text());
+	viewCompany( name);
+}
+
+var intervalQuery;
+var serialNumber;
+var queryCount = 0;
+
+
+function addNewCompany(){
+	var name=$.trim($("#newName").val());
+	var province=$.trim($("#newProvince").val());
+	var address=$.trim($("#newAddress").val());
+	var property=$.trim($("#newProperty").val());
+	var industry=$.trim($("#newIndustry").val());
+	var scale=$.trim($("#newScale").val());
+	var webSite=$.trim($("#newWebSite").val());
+	var introduction=$.trim($("#newIntroduction").val());
+
+	if(""==name){
+		alert("公司名称不能为空!");
+		return;
+	} 
+	if (name.length > 64) {
+		alert("公司名长度不能超过64字!");
+		return;	
+	} 
+	if(introduction.length>150){
+		alert("简介长度不能超过150字!");
+		return;
+	}
+    var from = Account.NewAccount().getAddressString();
+    var value = "0";
+    var nonce = "0"
+    var gas_price = "1000000"
+    var gas_limit = "2000000"
+    var callFunction = "getCompany";
+    var callArgs = "[\"" +name+ "\"]"; 
+    var contract = {
+        "function": callFunction,
+        "args": callArgs
+    }
+
+    neb.api.call(from,dappAddress,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+   	 var result = resp.result     
+        console.log("return of getCompany: " + JSON.stringify(result))
+        if (result!='null'){
+        	alert("公司已经存在!")
+        }
+        else{
+        	value = "0";
+        	callFunction = "addCompany"
+        	callArgs = "["+"\""+name+"\","+"\""+province+"\","+"\""+address+"\","+"\""+property+"\","+"\""+industry+"\","+"\""+scale+"\","+"\""+webSite+"\","+"\""+introduction+"\""+ "]"; 
+        	serialNumber = nebPay.call(dappAddress, value, callFunction, callArgs, {    
+                listener: cb4NebPayCall, 
+                callback: NebPay.config.mainnetUrl
+            });
+            if(intervalQuery!=null){
+                clearInterval(intervalQuery);  
+            }
+            intervalQuery = setInterval(function () {
+                funcIntervalQuery(name);
+            }, 11000);
+            queryCount = 0;
+            $("#loading").show();
+        }
+    });
+}
+
+function addComment(){
+	var name=$.trim($("#viewName").text());
+	var remark=$.trim($("#newRemark").val());
+	var score=$.trim($("#newScore").val()); 
+	if(""==name){
+		alert("公司名称不能为空!");
+		return;
+	} 
+	if (name.length > 64) {
+		alert("公司名长度不能超过64个字!");
+		return;	
+	} 
+	if(remark.length<5){
+		alert("评价长度不能少于5个字!");
+		return;
+	}
+	if(remark.length>150){
+		alert("评价长度不能超过150个字!");
+		return;
+	}
+    var from = Account.NewAccount().getAddressString();
+    var value = "0";
+    var nonce = "0"
+    var callFunction = "addComment";
+    var callArgs = "[\"" +name+ "\","+ score + ",\""+ remark+ "\"]"; 
+    var contract = {
+        "function": callFunction,
+        "args": callArgs
+    }
+    serialNumber = nebPay.call(dappAddress, value, callFunction, callArgs, {    
+        listener: cb4NebPayCall, 
+        callback: NebPay.config.mainnetUrl
+    });
+    if(intervalQuery!=null){
+        clearInterval(intervalQuery);  
+    }
+    intervalQuery = setInterval(function () {
+        funcIntervalQuery(name);
+    }, 11000);
+    queryCount = 0;
+    $("#loading").show();
+}
+
+function modifyCompany(){
+	var name=$.trim($("#modifyName").text());
+	var province=$.trim($("#modifyProvince").val());
+	var address=$.trim($("#modifyAddress").val());
+	var property=$.trim($("#modifyProperty").val());
+	var industry=$.trim($("#modifyIndustry").val());
+	var scale=$.trim($("#modifyScale").val());
+	var webSite=$.trim($("#modifyWebSite").val());
+	var introduction=$.trim($("#modifyIntroduction").val());
+
+	if(""==name){
+		alert("公司名不能为空!");
+		return;
+	}
+	if(introduction.length>150){
+		alert("简介长度不能超过150字!");
+		return;
+	}
+    var from = Account.NewAccount().getAddressString();
+    var value = "0";
+	var callFunction = "modifyCompany"
+    var	callArgs = "["+"\""+name+"\","+"\""+province+"\","+"\""+address+"\","+"\""+property+"\","+"\""+industry+"\","+"\""+scale+"\","+"\""+webSite+"\","+"\""+introduction+"\""+ "]"; 
+    	serialNumber = nebPay.call(dappAddress, value, callFunction, callArgs, {    
+            listener: cb4NebPayCall, 
+            callback: NebPay.config.mainnetUrl
+        });
+        if(intervalQuery!=null){
+            clearInterval(intervalQuery);  
+        }
+        intervalQuery = setInterval(function () {
+            funcIntervalQuery(name);
+        }, 11000);
+        queryCount = 0;
+        $("#loading").show();
+}
+
+function cb4NebPayCall(resp) {
+    console.log("response of nebPay.call: " + JSON.stringify(resp))
+}
+
+
+function funcIntervalQuery(CompanyName) {
+    nebPay.queryPayInfo(serialNumber)   //search transaction result from server (result upload to server by app)
+        .then(function (resp) {
+            console.log("tx result: " + resp)   //resp is a JSON string
+            var respObject = JSON.parse(resp)
+            if(respObject.code === 0){  
+                $("#loading").hide();
+                alert("操作成功! 若页面未更新, 请稍后点击刷新按钮.");
+                if(CompanyName==null){
+                    showMainpage();
+                }
+                else{
+                	viewCompany(CompanyName);
+                }
+                clearInterval(intervalQuery);  
+            } 
+            queryCount++;
+            if(queryCount>20){
+            	$("#loading").hide();
+            	clearInterval(intervalQuery);  
+            }
+        })
+        .catch(function (err) {
+            console.log(err);
+        });
+}
+
+function lastPage(){
+	if(pageIndex<=1){
+		return;
+	} 
+	showTable(pageIndex-1);
+}
+
+function nextPage(){
+	if(pageIndex>=totalPage){
+		return;
+	}
+	showTable(pageIndex+1);
+}
+
+function lastPage4Comment(){
+	if(pageIndex4Comment<=1){
+		return;
+	} 
+	showTable4Comment( pageIndex4Comment-1);
+}
+
+function nextPage4Comment(){
+	if(pageIndex4Comment>=totalPage4Comment){
+		return;
+	}
+	showTable4Comment( pageIndex4Comment+1);
+}
+
+function refreshTable(){
+	searchCompany();
+}
+</script>
+
+</head>
+<body>
+	<div class="container">
+		<p />
+		<div align="right" style="height: 10px;">
+			我的省份: <select id="myProvince" onChange="changeProvince()">
+				<option value="">全部</option>
+				<option value="北京">北京</option>
+				<option value="天津">天津</option>
+				<option value="上海">上海</option>
+				<option value="重庆">重庆</option>
+				<option value="黑龙江">黑龙江</option>
+				<option value="吉林">吉林</option>
+				<option value="辽宁">辽宁</option>
+				<option value="内蒙古">内蒙古</option>
+				<option value="河北">河北</option>
+				<option value="河南">河南</option>
+				<option value="山东">山东</option>
+				<option value="山西">山西</option>
+				<option value="陕西">陕西</option>
+				<option value="甘肃">甘肃</option>
+				<option value="宁夏">宁夏</option>
+				<option value="新疆">新疆</option>
+				<option value="青海">青海</option>
+				<option value="西藏">西藏</option>
+				<option value="江苏">江苏</option>
+				<option value="安徽">安徽</option>
+				<option value="浙江">浙江</option>
+				<option value="福建">福建</option>
+				<option value="江西">江西</option>
+				<option value="湖北">湖北</option>
+				<option value="湖南">湖南</option>
+				<option value="广东">广东</option>
+				<option value="广西">广西</option>
+				<option value="海南">海南</option>
+				<option value="四川">四川</option>
+				<option value="贵州">贵州</option>
+				<option value="云南">云南</option>
+				<option value="香港">香港</option>
+				<option value="澳门">澳门</option>
+				<option value="台湾">台湾</option>
+			</select>
+		</div>
+		<h1 align="left">公司点评</h1>
+		<div align="center" style="height: 20px;">
+			&nbsp;<img id="loading" src="js/loading.gif" />&nbsp;
+		</div>
+		<br />
+		<div id="main">
+			<div align="right">
+				<div class="btn-group btn-group-sm" align="right">
+					<input id="searchName" value=""
+						placeholder="请输入公司全名, 不支持模糊匹配, 不填则搜索所有公司" size="50" />
+					<button class="btn  btn-dark" onclick="searchCompany()">搜索</button>
+					&nbsp;&nbsp;&nbsp;&nbsp;
+					<button onclick="refreshTable()" type="button"
+						class="btn  btn-dark">刷新</button>
+					&nbsp;&nbsp;&nbsp;&nbsp;
+					<button onclick="toAddNewCompany()" class="btn  btn-dark">添加公司</button>
+				</div>
+			</div>
+			<table class="table table-striped">
+				<thead>
+					<tr>
+						<th>公司</th>
+						<th>省份</th>
+						<th>评论数</th>
+						<th>评分</th>
+					</tr>
+				</thead>
+				<tbody id="tbody">
+				</tbody>
+			</table>
+			<p>
+				共<label id="totalCount">0</label>条记录 &nbsp;&nbsp;&nbsp;&nbsp;第<label
+					id="pageIndex">0</label>/<label id="totalPage">0</label>页
+				&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:void(0)"
+					onclick="lastPage()">上一页</a> &nbsp;&nbsp;&nbsp;&nbsp;<a
+					href="javascript:void(0)" onclick="nextPage()">下一页</a>
+
+			</p>
+
+		</div>
+
+		<div id="viewCompany">
+			<table class="table table-bordered">
+				<tr valign="top" align="left">
+					<td width="25%">
+						<h4>
+							<label id="viewName"></label>
+						</h4> 评论数: <label id="viewCommentCount"></label> &nbsp;&nbsp; 评分: <label
+						id="viewAvgScore"></label>/5 <br /> 性质: <label id="viewProperty"></label><br />
+						行业: <label id="viewIndustry"></label><br /> 规模: <label
+						id="viewScale"></label><br /> 省份: <label id="viewProvince"></label><br />
+						地址: <label id="viewAddress"></label><br /> 网站: <label
+						id="viewWebSite"></label><br /> <label id="viewIntroduction"></label><br />
+						<div class="form-group" align="left">
+							<div class="btn-group btn-group-sm">
+								<button onclick="toRefreshCompany4View()" type="button"
+									class="btn  btn-dark">刷新</button>
+								&nbsp;&nbsp;
+								<button onclick="toModifyCompany4View()" type="button"
+									class="btn  btn-dark">修改</button>
+								&nbsp;&nbsp;
+								<button onclick="showMainpage()" class="btn  btn-dark">返回公司列表</button>
+							</div>
+						</div>
+					</td>
+					<td>
+						<table id="commentList" class="table" width="100%">
+						</table>
+ 						<p>
+							 共<label id="totalCount4Comment">0</label>条评论
+						&nbsp;&nbsp;&nbsp;&nbsp;第<label id="pageIndex4Comment">0</label>/<label
+						id="totalPage4Comment">0</label>页 &nbsp;&nbsp;&nbsp;&nbsp;<a
+						href="javascript:void(0)" onclick="lastPage4Comment()">上一页</a>
+						&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:void(0)"
+						onclick="nextPage4Comment()">下一页</a>  
+						</p>			 
+						<br />
+						<h6>添加评论</h6>
+						<p>
+							<textarea cols="80" rows="3" placeholder="150字以内" id="newRemark"></textarea>
+						</p>
+						<p>
+							评分: <select id="newScore">
+								<option value="0">不评分</option>
+								<option value="5">5</option>
+								<option value="4">4</option>
+								<option value="3">3</option>
+								<option value="2">2</option>
+								<option value="1">1</option>
+							</select>
+						</p>
+
+						<div class="form-group" align="left">
+							<div class="btn-group btn-group-sm">
+								<button onclick="addComment()" type="button"
+									class="btn  btn-dark">添加</button>
+								&nbsp;&nbsp;&nbsp;&nbsp;	
+								<button onclick="toRefreshCompany4View()" type="button"
+									class="btn  btn-dark">刷新评论列表</button>
+							</div>
+						</div>
+
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<div id="addCompany">
+			<h4>添加公司</h4>
+			<br />
+			<div class="form-horizontal" role="form">
+				<div class="form-group">
+					<label class="col-sm-2 control-label">公司名称:</label><input
+						id="newName" value="" size="100" />
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">省份:</label> <select
+						id="newProvince">
+						<option value="北京">北京</option>
+						<option value="天津">天津</option>
+						<option value="上海">上海</option>
+						<option value="重庆">重庆</option>
+						<option value="黑龙江">黑龙江</option>
+						<option value="吉林">吉林</option>
+						<option value="辽宁">辽宁</option>
+						<option value="内蒙古">内蒙古</option>
+						<option value="河北">河北</option>
+						<option value="河南">河南</option>
+						<option value="山东">山东</option>
+						<option value="山西">山西</option>
+						<option value="陕西">陕西</option>
+						<option value="甘肃">甘肃</option>
+						<option value="宁夏">宁夏</option>
+						<option value="新疆">新疆</option>
+						<option value="青海">青海</option>
+						<option value="西藏">西藏</option>
+						<option value="江苏">江苏</option>
+						<option value="安徽">安徽</option>
+						<option value="浙江">浙江</option>
+						<option value="福建">福建</option>
+						<option value="江西">江西</option>
+						<option value="湖北">湖北</option>
+						<option value="湖南">湖南</option>
+						<option value="广东">广东</option>
+						<option value="广西">广西</option>
+						<option value="海南">海南</option>
+						<option value="四川">四川</option>
+						<option value="贵州">贵州</option>
+						<option value="云南">云南</option>
+						<option value="香港">香港</option>
+						<option value="澳门">澳门</option>
+						<option value="台湾">台湾</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">地址:</label><input
+						id="newAddress" value="" size="100" />
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">性质:</label> <select
+						id="newProperty">
+						<option value="外资(欧美)">外资(欧美)</option>
+						<option value="外资(非欧美)">外资(非欧美)</option>
+						<option value="合资">合资</option>
+						<option value="国企">国企</option>
+						<option value="民营公司">民营公司</option>
+						<option value="政府机关/事业单位/非营利组织">政府机关/事业单位/非营利组织</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">行业:</label> <select
+						id="newIndustry">
+						<option value="计算机/互联网/通信/电子">计算机/互联网/通信/电子</option>
+						<option value="会计/金融/银行/保险">会计/金融/银行/保险</option>
+						<option value="贸易/消费/制造/营运">贸易/消费/制造/营运</option>
+						<option value="制药/医疗">制药/医疗</option>
+						<option value="房地产/建筑">房地产/建筑</option>
+						<option value="专业服务/教育/培训">专业服务/教育/培训</option>
+						<option value="服务业">服务业</option>
+						<option value="物流/运输">物流/运输</option>
+						<option value="能源/原材料">能源/原材料</option>
+						<option value="政府/非营利组织/其他">政府/非营利组织/其他</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">规模:</label> <select
+						id="newScale">
+						<option value="少于50人">少于50人</option>
+						<option value="50-150人">50-150人</option>
+						<option value="150-500人">150-500人</option>
+						<option value="500-1000人">500-1000人</option>
+						<option value="1000-5000人">1000-5000人</option>
+						<option value="5000-10000人">5000-10000人</option>
+						<option value="10000人以上">10000人以上</option>
+						<option value="不详">不详</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">网站:</label> <input
+						id="newWebSite" value="" size="100" />
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">简介:</label>
+					<textarea cols="100" rows="3" placeholder="150字以内"
+						id="newIntroduction"></textarea>
+				</div>
+				<div class="form-group" align="center">
+					<div class="btn-group btn-group-sm">
+						<button onclick="addNewCompany()" type="button"
+							class="btn  btn-dark">确定</button>
+						&nbsp;&nbsp;&nbsp;&nbsp;
+						<button onclick="showMainpage()" class="btn  btn-dark">返回</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="modifyCompany">
+			<br />
+			<h4>
+				<label id="modifyName"></label>
+			</h4>
+			<br />
+			<form class="form-horizontal" role="form">
+				<div class="form-group">
+					<label class="col-sm-2 control-label">省份:</label> <select
+						id="modifyProvince">
+						<option value="北京">北京</option>
+						<option value="天津">天津</option>
+						<option value="上海">上海</option>
+						<option value="重庆">重庆</option>
+						<option value="黑龙江">黑龙江</option>
+						<option value="吉林">吉林</option>
+						<option value="辽宁">辽宁</option>
+						<option value="内蒙古">内蒙古</option>
+						<option value="河北">河北</option>
+						<option value="河南">河南</option>
+						<option value="山东">山东</option>
+						<option value="山西">山西</option>
+						<option value="陕西">陕西</option>
+						<option value="甘肃">甘肃</option>
+						<option value="宁夏">宁夏</option>
+						<option value="新疆">新疆</option>
+						<option value="青海">青海</option>
+						<option value="西藏">西藏</option>
+						<option value="江苏">江苏</option>
+						<option value="安徽">安徽</option>
+						<option value="浙江">浙江</option>
+						<option value="福建">福建</option>
+						<option value="江西">江西</option>
+						<option value="湖北">湖北</option>
+						<option value="湖南">湖南</option>
+						<option value="广东">广东</option>
+						<option value="广西">广西</option>
+						<option value="海南">海南</option>
+						<option value="四川">四川</option>
+						<option value="贵州">贵州</option>
+						<option value="云南">云南</option>
+						<option value="香港">香港</option>
+						<option value="澳门">澳门</option>
+						<option value="台湾">台湾</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">地址:</label><input
+						id="modifyAddress" value="" size="100" />
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">性质:</label> <select
+						id="modifyProperty">
+						<option value="外资(欧美)">外资(欧美)</option>
+						<option value="外资(非欧美)">外资(非欧美)</option>
+						<option value="合资">合资</option>
+						<option value="国企">国企</option>
+						<option value="民营公司">民营公司</option>
+						<option value="政府机关/事业单位/非营利组织">政府机关/事业单位/非营利组织</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">行业:</label> <select
+						id="modifyIndustry">
+						<option value="计算机/互联网/通信/电子">计算机/互联网/通信/电子</option>
+						<option value="会计/金融/银行/保险">会计/金融/银行/保险</option>
+						<option value="贸易/消费/制造/营运">贸易/消费/制造/营运</option>
+						<option value="制药/医疗">制药/医疗</option>
+						<option value="房地产/建筑">房地产/建筑</option>
+						<option value="专业服务/教育/培训">专业服务/教育/培训</option>
+						<option value="服务业">服务业</option>
+						<option value="物流/运输">物流/运输</option>
+						<option value="能源/原材料">能源/原材料</option>
+						<option value="政府/非营利组织/其他">政府/非营利组织/其他</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">规模:</label> <select
+						id="modifyScale">
+						<option value="少于50人">少于50人</option>
+						<option value="50-150人">50-150人</option>
+						<option value="150-500人">150-500人</option>
+						<option value="500-1000人">500-1000人</option>
+						<option value="1000-5000人">1000-5000人</option>
+						<option value="5000-10000人">5000-10000人</option>
+						<option value="10000人以上">10000人以上</option>
+						<option value="不详">不详</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">网站:</label> <input
+						id="modifyWebSite" value="" size="100" />
+				</div>
+				<div class="form-group">
+					<label class="col-sm-2 control-label">简介:</label>
+					<textarea cols="100" rows="3" placeholder="150字以内"
+						id="modifyIntroduction"></textarea>
+				</div>
+				<div class="form-group" align="center">
+					<div class="btn-group btn-group-sm">
+						<button onclick="modifyCompany()" type="button"
+							class="btn  btn-dark">确定</button>
+						&nbsp;&nbsp;&nbsp;&nbsp;
+						<button onclick="toViewCompany4Modify()" class="btn  btn-dark">返回</button>
+					</div>
+				</div>
+			</form>
+		</div>
+
+	</div>
+
+</body>
+</html>
