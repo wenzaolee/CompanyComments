@@ -113,7 +113,7 @@ function showTable(toPageIndex){
         		 var item= arrayResult[i];
         		 totalCount = item.totalCompanyCount;
         		 str += "<tr>";
-        		 str += "<td> <a href=\"javascript:toViewCompany('" + item.name + "')\" >" + item.name + "</a></td>";
+        		 str += "<td> <a href=\"javascript:goToViewCompany('" + item.name + "')\" >" + item.name + "</a></td>";
         		 str += "<td>" + item.province + "</td>";
         		 str += "<td>" + item.totalCommentCount + "</td>";
         		 str += "<td>" + Math.round(10*item.avgScore)/10 + "</td>";
@@ -163,7 +163,7 @@ function searchCompany(){
           else{
        	    result = JSON.parse(JSON.parse(result)); 
             var str = "<tr>";
-           	str += "<td> <a href=\"javascript:toViewCompany('" + result.name + "')\" >" + result.name + "</a></td>";
+           	str += "<td> <a href=\"javascript:goToViewCompany('" + result.name + "')\" >" + result.name + "</a></td>";
            	str += "<td>" + result.province + "</td>";
            	str += "<td>" + result.totalCommentCount + "</td>";
            	str += "<td>" +  Math.round(10*result.avgScore)/10 + "</td>";
@@ -222,10 +222,13 @@ function showTable4Comment(toPageIndex){
     })
 }
 
-function toViewCompany(name){
-	$("#main").hide(); isMainPage = false;
+
+function goToViewCompany(name){
+	$("#main").hide(); 
+	isMainPage = false;
 	$("#addCompany").hide();
-	$("#viewCompany").show(); isViewCompany = true;
+	$("#viewCompany").show(); 
+	isViewCompany = true;
 	$("#modifyCompany").hide();
     $("#loading").show();
     $("#newRemark").val("");
@@ -245,6 +248,17 @@ function toViewCompany(name){
 	$("#newScore").val("0");
 	$("#totalCount4Comment").text("");
   	$("#totalPage4Comment").text("");
+	viewCompany(name);
+}
+
+function toViewCompany(name){
+	$("#main").hide(); 
+	isMainPage = false;
+	$("#addCompany").hide();
+	$("#viewCompany").show(); 
+	isViewCompany = true;
+	$("#modifyCompany").hide();
+    $("#loading").show();
 	viewCompany(name);
 }
 
@@ -282,8 +296,7 @@ function viewCompany(name){
         		$("#viewIntroduction").text(result.introduction);
         		$("#viewCommentCount").text(result.totalCommentCount);
         		$("#viewAvgScore").text( Math.round(10*result.avgScore)/10);
-        		//$("#newRemark").val("");
-        		//$("#newScore").val("0");
+        		
         		
           		totalCount4Comment = result.totalCommentCount;
                 totalPage4Comment = Math.ceil(totalCount4Comment/pageSize4Comment);
@@ -475,8 +488,8 @@ function addComment(){
     }, 11000);
     queryCount = 0;
     $("#loading").show();
-    $("#newRemark").val("");
-	$("#newScore").val("0");
+    //$("#newRemark").val("");
+	//$("#newScore").val("0");
 }
 
 function modifyCompany(){
@@ -533,6 +546,8 @@ function funcIntervalQuery(CompanyName) {
                 }
                 else{
                 	toViewCompany(CompanyName);
+                	$("#newRemark").val("");
+            		$("#newScore").val("0");
                 }
                 clearInterval(intervalQuery);  
             } 
@@ -962,7 +977,7 @@ function refreshTable(){
 						<button onclick="modifyCompany()" type="button"
 							class="btn  btn-dark">确定</button>
 						&nbsp;&nbsp;&nbsp;&nbsp;
-						<button onclick="toViewCompany4Modify()" class="btn  btn-dark">返回</button>
+						<button onclick="goToViewCompany4Modify()" class="btn  btn-dark">返回</button>
 					</div>
 				</div>
 			</form>
