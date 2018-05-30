@@ -231,11 +231,27 @@ function toViewCompany(name){
     $("#newRemark").val("");
 	$("#newScore").val("0");
 	$("#commentList").html(""); 
+	$("#viewName").text("");
+	$("#viewProvince").text("");
+	$("#viewAddress").text("");
+	$("#viewProperty").text("");
+	$("#viewIndustry").text("");
+	$("#viewScale").text("");
+	$("#viewWebSite").text("");
+	$("#viewIntroduction").text("");
+	$("#viewCommentCount").text("");
+	$("#viewAvgScore").text("");
+	$("#newRemark").val("");
+	$("#newScore").val("0");
+	$("#totalCount4Comment").text("");
+  	$("#totalPage4Comment").text("");
 	viewCompany(name);
 }
 
 
 function viewCompany(name){
+	
+  	
 	var from = Account.NewAccount().getAddressString();
     var value = "0";
     var nonce = "0"
@@ -279,6 +295,14 @@ function viewCompany(name){
 }
 
 function toModifyCompany(name){
+	$("#modifyName").text("");
+	$("#modifyProvince").val("");
+	$("#modifyAddress").val("");
+	$("#modifyProperty").val("北京");
+	$("#modifyIndustry").val("");
+	$("#modifyScale").val("");
+	$("#modifyWebSite").val("");
+	$("#modifyIntroduction").val("");
 	var from = Account.NewAccount().getAddressString();
     var value = "0";
     var nonce = "0"
@@ -597,7 +621,10 @@ function refreshTable(){
 				<option value="澳门">澳门</option>
 				<option value="台湾">台湾</option>
 			</select>
-			<p>使用本DApp需要安装<a target="_blank" href="https://github.com/nebulasio/web-wallet">星云链钱包插件</a></p>
+			<p>
+				使用本DApp需要安装<a target="_blank"
+					href="https://github.com/nebulasio/web-wallet">星云链钱包插件</a>
+			</p>
 		</div>
 		<h1 align="left">公司点评</h1>
 		<div align="center" style="height: 10px;">
@@ -646,12 +673,32 @@ function refreshTable(){
 					<td width="25%">
 						<h4>
 							<label id="viewName"></label>
-						</h4> 评论数: <label id="viewCommentCount"></label> &nbsp;&nbsp; 评分: <label
-						id="viewAvgScore"></label>/5 <br /> 性质: <label id="viewProperty"></label><br />
-						行业: <label id="viewIndustry"></label><br /> 规模: <label
-						id="viewScale"></label><br /> 省份: <label id="viewProvince"></label><br />
-						地址: <label id="viewAddress"></label><br /> 网站: <label
-						id="viewWebSite"></label><br /> 简介: <label id="viewIntroduction"></label><br />
+						</h4>
+						<p>
+							评论数: <label id="viewCommentCount"></label> &nbsp;&nbsp; 评分: <label
+								id="viewAvgScore"></label>/5
+						</p>
+						<p>
+							性质: <label id="viewProperty"></label>
+						</p>
+						<p>
+							行业: <label id="viewIndustry"></label>
+						</p>
+						<p>
+							规模: <label id="viewScale"></label>
+						</p>
+						<p>
+							省份: <label id="viewProvince"></label>
+						</p>
+						<p>
+							地址: <label id="viewAddress"></label>
+						</p>
+						<p>
+							网站: <label id="viewWebSite"></label>
+						</p>
+						<p>
+							简介: <label id="viewIntroduction"></label>
+						</p>
 						<div class="form-group" align="left">
 							<div class="btn-group btn-group-sm">
 								<button onclick="toRefreshCompany4View()" type="button"
@@ -665,15 +712,14 @@ function refreshTable(){
 					<td>
 						<table id="commentList" class="table" width="100%">
 						</table>
- 						<p>
-							 共<label id="totalCount4Comment">0</label>条评论
-						&nbsp;&nbsp;&nbsp;&nbsp;第<label id="pageIndex4Comment">0</label>/<label
-						id="totalPage4Comment">0</label>页 &nbsp;&nbsp;&nbsp;&nbsp;<a
-						href="javascript:void(0)" onclick="lastPage4Comment()">上一页</a>
-						&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:void(0)"
-						onclick="nextPage4Comment()">下一页</a>  
-						</p>			 
-						<br />
+						<p>
+							共<label id="totalCount4Comment">0</label>条评论
+							&nbsp;&nbsp;&nbsp;&nbsp;第<label id="pageIndex4Comment">0</label>/<label
+								id="totalPage4Comment">0</label>页 &nbsp;&nbsp;&nbsp;&nbsp;<a
+								href="javascript:void(0)" onclick="lastPage4Comment()">上一页</a>
+							&nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:void(0)"
+								onclick="nextPage4Comment()">下一页</a>
+						</p> <br />
 						<h6>添加评论</h6>
 						<p>
 							<textarea cols="80" rows="3" placeholder="150字以内" id="newRemark"></textarea>
@@ -693,7 +739,7 @@ function refreshTable(){
 							<div class="btn-group btn-group-sm">
 								<button onclick="addComment()" type="button"
 									class="btn  btn-dark">添加</button>
-								&nbsp;&nbsp;&nbsp;&nbsp;	
+								&nbsp;&nbsp;&nbsp;&nbsp;
 								<button onclick="showMainpage()" class="btn  btn-dark">返回公司列表</button>
 							</div>
 						</div>
