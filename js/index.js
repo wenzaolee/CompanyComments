@@ -1,6 +1,6 @@
 "use strict";
 
-var dappAddress = "n1fyfzd7BrNCyjVhnN77MLMopUi928PSnBW"; //主网, hash: d2bfd426b3a402940b5d8788fde43b99adba3d5a6377b7285ef7ceab5a6c4a4b
+var dappAddress = "n1kL8E7Apkk4CJpUgXskxakSEr8yeyCyL47"; //主网, hash: 59524d16983973b03c8e4d24993d6e717d18d6c470627157d812c3061beb043e
 var nebulas = require("nebulas"),
 Account = nebulas.Account,
 neb = new nebulas.Neb();
@@ -43,6 +43,8 @@ function showMainpage(){
 	$("#viewCompany").hide();  isViewCompany = false;
 	$("#modifyCompany").hide();
     $("#loading").show();
+    $("#searchName").val("")
+    pageIndex = 1;
 	showTable(pageIndex);
 }
 
@@ -114,7 +116,6 @@ function showTable(toPageIndex){
          }
      }).catch(function (err) {
          console.log("error:" + err.message)
-         alert("发生异常:" + err.message);
      })
 }
 
@@ -126,13 +127,15 @@ function searchCompany(){
 		showTable(1) ;
 		return;
 	}
+	isMainPage = false;
+	isViewCompany = false;
 	var from = Account.NewAccount().getAddressString();
     var value = "0";
     var nonce = "0"
     var gas_price = "1000000"
     var gas_limit = "2000000"
-    var callFunction = "getCompany";
-    var callArgs = "[\"" +name+ "\"]"; 
+    var callFunction = "searchCompany";
+    var callArgs = "[\"" + myProvince +  "\",\"" +name+ "\"]"; 
     var contract = {
         "function": callFunction,
         "args": callArgs
@@ -213,7 +216,6 @@ function showTable4Comment(toPageIndex){
         }
     }).catch(function (err) {
         console.log("error:" + err.message)
-        alert("发生异常:" + err.message);
     })
 }       	 
 
@@ -263,6 +265,7 @@ function toViewCompany(name){
 
 
 function viewCompany(name){
+	$("#viewName").text(name);
 	var from = Account.NewAccount().getAddressString();
     var value = "0";
     var nonce = "0"
@@ -283,7 +286,7 @@ function viewCompany(name){
            }
            else{
         	   result = JSON.parse(JSON.parse(result)); 
-        		$("#viewName").text(result.name);
+        		$("#viewName").text(name);
         		$("#viewProvince").text(result.province);
         		$("#viewAddress").text(result.address);
         		$("#viewProperty").text(result.property);
@@ -336,7 +339,7 @@ function toModifyCompany(name){
       		$("#addCompany").hide();
       		$("#viewCompany").hide(); isViewCompany = false;
       		$("#modifyCompany").show();
-      		$("#modifyName").text(result.name);
+      		$("#modifyName").text(name);
       		$("#modifyProvince").val(result.province);
       		$("#modifyAddress").val(result.address);
       		$("#modifyProperty").val(result.property);
@@ -432,7 +435,7 @@ function addNewCompany(){
                    clearInterval(intervalQuery);  
                }
                intervalQuery = setInterval(function () {
-                   funcIntervalQuery(name);
+                   funcIntervalQuery(null);
                }, 11000);
                queryCount = 0;
                $("#loading").show();

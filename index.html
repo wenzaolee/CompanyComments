@@ -72,6 +72,9 @@ $(document).ready(function(){
 			</p>
 		</div>
 		<h1 onclick="showMainpage()" align="left">公司点评</h1>
+		<div align="left" style="height: 10px;">
+			基于星云链的去中心化公司评论平台
+		</div>
 		<div align="center" style="height: 10px;">
 			&nbsp;<img id="loading" src="js/loading.gif" />&nbsp;
 		</div>
@@ -80,11 +83,11 @@ $(document).ready(function(){
 			<div align="right">
 				<div class="btn-group btn-group-sm" align="right">
 					<input id="searchName" value=""
-						placeholder="请输入公司全名, 不支持模糊匹配, 不填则搜索所有公司" size="50" />
+						placeholder='请输入公司关键字, 不要使用"公司", "科技"等模糊词语' size="50" />
 					<button class="btn  btn-dark" onclick="searchCompany()">搜索</button>
 					&nbsp;&nbsp;&nbsp;&nbsp;
-					<button onclick="refreshTable()" type="button"
-						class="btn  btn-dark">刷新</button>
+					<button onclick="showMainpage()" type="button"
+						class="btn  btn-dark">重置首页</button>
 					&nbsp;&nbsp;&nbsp;&nbsp;
 					<button onclick="toAddNewCompany()" class="btn  btn-dark">添加公司</button>
 				</div>
@@ -185,7 +188,7 @@ $(document).ready(function(){
 								<button onclick="addComment()" type="button"
 									class="btn  btn-dark">添加</button>
 								&nbsp;&nbsp;&nbsp;&nbsp;
-								<button onclick="showMainpage()" class="btn  btn-dark">返回公司列表</button>
+								<button onclick="showMainpage()" class="btn  btn-dark">返回首页</button>
 							</div>
 						</div>
 

@@ -1,23 +1,25 @@
 "use strict";
 
-Date.prototype.format = function(fmt) { 
-    var o = { 
-       "M+" : this.getMonth()+1, 
-       "d+" : this.getDate(),    
-       "h+" : this.getHours(),    
-       "m+" : this.getMinutes(),        
-       "s+" : this.getSeconds(),      
-       "S"  : this.getMilliseconds()   
-   }; 
-   if(/(y+)/.test(fmt)) {
-           fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length)); 
-   }
-    for(var k in o) {
-       if(new RegExp("("+ k +")").test(fmt)){
-            fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
-        }
-    }
-   return fmt; 
+Date.prototype.format = function(fmt) {
+	var o = {
+		"M+" : this.getMonth() + 1,
+		"d+" : this.getDate(),
+		"h+" : this.getHours(),
+		"m+" : this.getMinutes(),
+		"s+" : this.getSeconds(),
+		"S" : this.getMilliseconds()
+	};
+	if (/(y+)/.test(fmt)) {
+		fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "")
+				.substr(4 - RegExp.$1.length));
+	}
+	for ( var k in o) {
+		if (new RegExp("(" + k + ")").test(fmt)) {
+			fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k])
+					: (("00" + o[k]).substr(("" + o[k]).length)));
+		}
+	}
+	return fmt;
 }
 
 var Company = function(text) {
@@ -152,8 +154,8 @@ CompanyComments.prototype = {
 		this.province2CompanyNameMap.put(province, companyNameArray);
 	},
 
-	modifyCompany : function(name, province, address, property, industry, scale,
-			webSite, introduction) {
+	modifyCompany : function(name, province, address, property, industry,
+			scale, webSite, introduction) {
 		name = name.trim();
 		province = province.trim();
 		if (province == "") {
@@ -175,7 +177,8 @@ CompanyComments.prototype = {
 		this.companyDetailMap.put(name, company);
 
 		if (oldProvince != province) {
-			var oldCompanyNameArray = this.province2CompanyNameMap.get(oldProvince);
+			var oldCompanyNameArray = this.province2CompanyNameMap
+					.get(oldProvince);
 			if (oldCompanyNameArray != null) {
 				for (var i = 0; i < oldCompanyNameArray.length; i++) {
 					if (oldCompanyNameArray[i] == name) {
@@ -183,10 +186,12 @@ CompanyComments.prototype = {
 						break;
 					}
 				}
-				this.province2CompanyNameMap.put(oldProvince, oldCompanyNameArray);
+				this.province2CompanyNameMap.put(oldProvince,
+						oldCompanyNameArray);
 			}
 
-			var newCompanyNameArray = this.province2CompanyNameMap.get(province);
+			var newCompanyNameArray = this.province2CompanyNameMap
+					.get(province);
 			if (newCompanyNameArray == null) {
 				newCompanyNameArray = new Array();
 			}
@@ -284,8 +289,8 @@ CompanyComments.prototype = {
 		var companyNames = this.province2CompanyNameMap.get(province);
 		if (companyNames) {
 			var endIndex = Math.min(startIndex + pageSize - 2,
-					companyNames.length-1);
-			for (var i = startIndex-1; i <= endIndex; i++) {
+					companyNames.length - 1);
+			for (var i = startIndex - 1; i <= endIndex; i++) {
 				var name = companyNames[i];
 				if (name) {
 					var company = this.companyDetailMap.get(name);
@@ -317,14 +322,51 @@ CompanyComments.prototype = {
 		var company = this.companyDetailMap.get(name);
 		var resultArray = new Array();
 		var reverseStart = company.totalCommentCount - startIndex + 1;
-		var reverseEnd = Math.max(1, company.totalCommentCount - startIndex - pageSize + 1);
-         //reverse order
+		var reverseEnd = Math.max(1, company.totalCommentCount - startIndex
+				- pageSize + 1);
+		// reverse order
 		for (var i = reverseStart; i >= reverseEnd; i--) {
 			var id = company.id + "_" + i;
 			var comment = this.id2CommentMap.get(id);
 			if (comment) {
 				resultArray.push(comment);
 			}
+		}
+		return JSON.stringify(resultArray);
+	},
+
+	searchCompany : function(province, keyWord) {
+		var resultArray = new Array();
+		province = province.trim();
+		keyWord = keyWord.trim();
+		if(keyWord==""){
+			return null;
+		}
+		var count = 0;
+		if (province == "") {
+			for (var i = 0; i <= this.totalCompanyCount && count<10; i++) {
+				var name = this.id2CompanyNameMap.get(i);
+				if (name && name.indexOf(keyWord)!=-1) {
+					var company = this.companyDetailMap.get(name);
+					company.totalCompanyCount = (++count);
+					resultArray.push(company);
+				}
+			}
+		} else {
+			var companyNames = this.province2CompanyNameMap.get(province);
+			if (companyNames) {
+				for (var i = 0; i < companyNames.length && count<10; i++) {
+					var name = companyNames[i];
+					if (name && name.indexOf(keyWord)!=-1) {
+						var company = this.companyDetailMap.get(name);
+						company.totalCompanyCount = (++count);
+						resultArray.push(company);
+					}
+				}
+			}
+		}
+		if(count==0){
+			return null;
 		}
 		return JSON.stringify(resultArray);
 	}
